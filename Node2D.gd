@@ -2,8 +2,10 @@ extends Node2D
 
 var time = 0
 var max_diff = 0
-var total_size = Vector2(40, 40)
-var drawing_scale = 15
+var drawing_scale = 5
+
+var total_size = Vector2(100, 100)
+var room_sizes = PackedVector2Array([Vector2(10, 10), Vector2(6, 4), Vector2(3, 2), Vector2(8, 8), Vector2(9, 9), Vector2(4, 5), Vector2(7, 7), Vector2(6, 9), Vector2(4, 16), Vector2(4, 16), Vector2(4, 16),Vector2(4, 16),Vector2(4, 16),Vector2(4, 16),Vector2(4, 16),Vector2(4, 16),Vector2(4, 16),Vector2(4, 16)])
 
 var tri_mesh = preload("res://Traingulation.gd").BowyerWatson.new()
 var prims_script = preload("res://Prims.gd").Prims.new()
@@ -13,10 +15,8 @@ var verticies = []
 var tree_edges = []
 var rooms = []
 
-var room_sizes = PackedVector2Array([Vector2(10, 10), Vector2(6, 4), Vector2(3, 2), Vector2(8, 8), Vector2(9, 9), Vector2(4, 5), Vector2(7, 7), Vector2(6, 9), Vector2(4, 16)])
-
-
 func _ready():
+	seed(hash("Smellson"))
 	for i in room_sizes:
 		if randi() % 2 == 0:
 			i = Vector2(i.y, i.x)
@@ -29,7 +29,7 @@ func _ready():
 	
 	print("Starting a*")
 	for i in rooms:
-		a_star.add_rectangle(i, 10)
+		a_star.add_rectangle(i, 100)
 		
 	for i in tree_edges:
 		a_star.add_path(Vector2i(i.pos1),Vector2i(i.pos2))
@@ -84,7 +84,7 @@ func draw_pixel(input: Vector2, color: Color):
 	draw_polygon(points, colors)
 	
 class Rectangle:
-	var padding = Vector2(3,3)
+	var padding = Vector2(1,1)
 	var loc: Vector2
 	var size: Vector2
 	func _init(_loc: Vector2, _size: Vector2):
