@@ -13,7 +13,3 @@ config_version=5
 config/name="Idek"
 config/features=PackedStringArray("4.0", "Vulkan Clustered")
 config/icon="res://icon.png"
-
-[autoload]
-
-Triangulation="*res://Traingulation.gd"

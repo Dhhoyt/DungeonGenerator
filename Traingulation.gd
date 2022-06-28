@@ -5,20 +5,24 @@ class BowyerWatson:
 	var triangles = []
 	var edges = []
 	
-	func add_vertex(new_pos: Vector2):
-		#new_pos += Vector2(randf() * 0.1, randf() * 0.1)
-		positions.append(new_pos + Vector2(randf() * 0.1, randf() * 0.1))
+	func add_vertex(new_pos: Vector2) -> int:
+		#Randomize position slightly to prevent infinite and 0 slopes
+		positions.append(new_pos)
 		return positions.size() - 1
 	
-	func generate_triangulation(points: Array):
+	func generate_triangulation(points: Array) -> void:
+		#Clear the positions array
 		for i in len(positions):
 			positions.remove_at(0)
+		seed(0)
 		var super_triangle = calc_super_triangle(points)
 		var possible_triangles = []
 		possible_triangles.append(super_triangle)
+		var num = 0
 		for point in points:
 			var new_point_index = add_vertex(point)
 			var bad_triangles = get_bad_triangles(point, possible_triangles)
+			#Calculate polygonal hole
 			var polygon = []
 			for bad_triangle in bad_triangles:
 				if not edge_is_shared(bad_triangle.a, bad_triangle.b, bad_triangles):
@@ -31,13 +35,15 @@ class BowyerWatson:
 				possible_triangles.remove_at(possible_triangles.find(bad_triangle))
 			for edge in polygon:
 				possible_triangles.append(Triangle.new(edge[0], edge[1], new_point_index, positions))
+			num += 1
+		#Remove all triangles connected to the super-triangle
 		triangles = []
 		for triangle in possible_triangles:
 			if not super_triangle.shares_vertex(triangle):
 				triangles.append(triangle)
 		tri_mesh_to_adjacency()
 	
-	func tri_mesh_to_adjacency():
+	func tri_mesh_to_adjacency() -> void:
 		var set = {}
 		for tri in triangles:
 			set[Vector2i(tri.a, tri.b)] = null
@@ -71,8 +77,8 @@ class BowyerWatson:
 				max.y = point.y
 		min -= Vector2(50, 50)
 		max += Vector2(1, 1)
-		max *= 2
-		var v0 = add_vertex(min - Vector2(1,1))
+		max *= 40
+		var v0 = add_vertex(min - Vector2(10,10))
 		var v1 = add_vertex(Vector2(min.x, max.y) + Vector2(-2, 1))
 		var v2 = add_vertex(Vector2(max.x, min.y))
 		return Triangle.new(v0, v1, v2, positions)
@@ -89,6 +95,8 @@ class BowyerWatson:
 		var v1: int
 		var pos1: Vector2
 		var pos2: Vector2
+		#Length remains squared because square root is costly, sqrt is monotonic, and
+		# its only needed to tell if a length is longer or shorter for my use
 		var squared_length: float
 		
 		func _init(_v0: int, _v1: int, positions: PackedVector2Array): 
@@ -117,6 +125,7 @@ class BowyerWatson:
 		
 		var a: int
 		var b: int
+
 		var c: int
 		
 		var circumcircle_center: Vector2
@@ -127,6 +136,7 @@ class BowyerWatson:
 			a = _a
 			b = _b
 			c = _c
+			#Sort verticies
 			if a > b:
 				var temp = b
 				b = a
@@ -143,14 +153,19 @@ class BowyerWatson:
 			self.circumcircle_raidus = pos[a].distance_to(circumcircle_center)
 		
 		func calc_circumcircle_center() -> Vector2:
+			#Calculates the circumcircle center by calculating the intercept of two normals
 			var mid_1 = midpoint(a, b)
 			var mid_2 = midpoint(b, c)
 			var slope_1 = -((pos[a].x - pos[b].x)/(pos[a].y - pos[b].y))
-			if pos[a].x == pos[b].x:
-				slope_1 = 0
+			if (pos[a].y - pos[b].y) == 0:
+				slope_1 = 10000000000
+			if slope_1 == 0:
+				slope_1 = 0.001
 			var slope_2 = -((pos[b].x - pos[c].x)/(pos[b].y - pos[c].y))
-			if pos[b].x == pos[c].x:
-				slope_2 = 0
+			if (pos[b].y - pos[c].y) == 0:
+				slope_2 = 10000000000
+			if slope_2 == 0:
+				slope_2 =0.001
 			var numerator = (slope_1 * mid_1.x) - mid_1.y - (slope_2 * mid_2.x) + mid_2.y
 			var denominator = slope_1 - slope_2
 			
@@ -169,9 +184,10 @@ class BowyerWatson:
 		func circumcircle_contains_point(point: Vector2) -> bool:
 			return point.distance_to(circumcircle_center) < circumcircle_raidus
 		
+		#Finds the midpoint of two verticies
 		func midpoint(v0: int, v1: int) -> Vector2:
 			return (pos[v0] + pos[v1])/2
-			
+		
 		func contains_vertex(v: int) -> bool:
 			return v == a or v == b or v == c
 		
